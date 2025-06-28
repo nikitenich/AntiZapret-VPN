@@ -100,7 +100,7 @@ bash <(wget --no-hsts -qO- https://raw.githubusercontent.com/nikitenich/AntiZapr
 
 ### 3. Добавить/удалить клиента
 ```sh
-/root/antizapret/client.sh [1-8] [имя_клиента] [срок_действия]
+/root/antizapret/client.sh [1-5] [имя_клиента] [срок_действия]
 ```
 Срок действия в днях - только для OpenVPN\
 После добавления нового клиента скопируйте новые файлы подключений (*.ovpn и *.conf) с сервера из подпапок /root/antizapret/client
@@ -178,7 +178,7 @@ WireGuard/AmneziaWG на роутерах [Keenetic](https://4pda.to/forum/index
 ### 1. Как переустановить сервер и сохранить работоспособность ранее созданных файлов подключений OpenVPN (\*.ovpn) и WireGuard/AmneziaWG (\*.conf)?
 Выполните команду
 ```sh
-/root/antizapret/client.sh 8
+/root/antizapret/client.sh 5
 ```
 И скачайте созданный файл /root/antizapret/backup\*.tar.gz\
 Если команда выполнилась с ошибкой то скачайте с сервера папки /etc/openvpn/easyrsa3 и /etc/wireguard\
@@ -213,7 +213,7 @@ DNS АнтиЗапрета = 10.29.0.1, 10.29.4.1, 10.29.8.1 (172.29.0.1, 172.29
 
 Выполните команду
 ```sh
-/root/antizapret/client.sh 7
+/root/antizapret/client.sh 4
 ```
 В подпапках /root/antizapret/client будут пересозданы все файлы подключений
 
