@@ -44,7 +44,6 @@ if [[ -z "$1" || "$1" == "ip" || "$1" == "ips" ]]; then
 	echo -n > result/DEFAULT
 	[[ "$ALTERNATIVE_IP" == "y" ]] && IP="172" || IP="10"
 	echo -e "route 0.0.0.0 128.0.0.0 net_gateway\nroute 128.0.0.0 128.0.0.0 net_gateway\nroute ${IP}.29.0.0 255.255.248.0\nroute ${IP}.30.0.0 255.254.0.0" > result/tp-link-openvpn-routes.txt
-	echo -e "route ADD DNS_IP_1 MASK 255.255.255.255 ${IP}.29.8.1\nroute ADD DNS_IP_2 MASK 255.255.255.255 ${IP}.29.8.1\nroute ADD ${IP}.30.0.0 MASK 255.254.0.0 ${IP}.29.8.1" > result/keenetic-wireguard-routes.txt
 	GATEWAY="${IP}.29.8.1"
 	while read -r line
 	do
@@ -52,20 +51,11 @@ if [[ -z "$1" || "$1" == "ip" || "$1" == "ips" ]]; then
 		MASK="$(sipcalc -- "$line" | awk '/Network mask/ {print $4; exit;}')"
 		echo "push \"route ${IP} ${MASK}\"" >> result/DEFAULT
 		echo "route ${IP} ${MASK}" >> result/tp-link-openvpn-routes.txt
-		echo "route ADD ${IP} MASK ${MASK} ${GATEWAY}" >> result/keenetic-wireguard-routes.txt
 	done < result/ips.txt
 
 	# Обновляем файл в OpenVPN только если файл DEFAULT изменился
 	if [[ -f result/DEFAULT ]] && ! diff -q result/DEFAULT /etc/openvpn/server/ccd/DEFAULT; then
 		cp -f result/DEFAULT /etc/openvpn/server/ccd/DEFAULT
-	fi
-
-	# Создаем файл для WireGuard/AmneziaWG
-	awk '{printf ", %s", $0}' result/ips.txt > result/ips
-
-	# Обновляем файл в WireGuard/AmneziaWG только если файл ips изменился
-	if [[ -f result/ips ]] && ! diff -q result/ips /etc/wireguard/ips; then
-		cp -f result/ips /etc/wireguard/ips
 	fi
 fi
 

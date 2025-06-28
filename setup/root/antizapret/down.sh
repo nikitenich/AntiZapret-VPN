@@ -51,9 +51,6 @@ iptables -w -t nat -D PREROUTING -i "$INTERFACE" -p tcp --dport 443 -j REDIRECT 
 # OpenVPN UDP port redirection for backup connections
 iptables -w -t nat -D PREROUTING -i "$INTERFACE" -p udp --dport 80 -j REDIRECT --to-ports 50080
 iptables -w -t nat -D PREROUTING -i "$INTERFACE" -p udp --dport 443 -j REDIRECT --to-ports 50443
-# AmneziaWG redirection ports to WireGuard
-iptables -w -t nat -D PREROUTING -i "$INTERFACE" -p udp --dport 52080 -j REDIRECT --to-ports 51080
-iptables -w -t nat -D PREROUTING -i "$INTERFACE" -p udp --dport 52443 -j REDIRECT --to-ports 51443
 # DNS redirection to Knot Resolver
 iptables -w -t nat -D PREROUTING -s 10.29.0.0/22 ! -d 10.29.0.1/32 -p udp --dport 53 -j DNAT --to-destination 10.29.0.1
 iptables -w -t nat -D PREROUTING -s 10.29.4.0/22 ! -d 10.29.4.1/32 -p udp --dport 53 -j DNAT --to-destination 10.29.4.1

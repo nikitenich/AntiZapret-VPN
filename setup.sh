@@ -52,7 +52,7 @@ fi
 
 echo
 echo -e '\e[1;32mInstalling AntiZapret VPN + traditional VPN...\e[0m'
-echo 'OpenVPN + WireGuard + AmneziaWG'
+echo 'OpenVPN'
 echo 'More details: https://github.com/GubernievS/AntiZapret-VPN'
 
 #
@@ -140,12 +140,6 @@ do
 	[[ -n $(getent ahostsv4 "$OPENVPN_HOST") ]] && break
 done
 echo
-while read -rp 'Enter valid domain name for this WireGuard/AmneziaWG server or press Enter to skip: ' -e WIREGUARD_HOST
-do
-	[[ -z "$WIREGUARD_HOST" ]] && break
-	[[ -n $(getent ahostsv4 "$WIREGUARD_HOST") ]] && break
-done
-echo
 until [[ "$ROUTE_ALL" =~ (y|n) ]]; do
 	read -rp $'Route all traffic for domains via \e[1;32mAntiZapret VPN\e[0m, excluding Russian domains and domains from exclude-hosts.txt? [y/n]: ' -e -i n ROUTE_ALL
 done
@@ -214,8 +208,6 @@ rm -f /etc/systemd/network/eth.network
 rm -f /etc/systemd/network/host.network
 rm -f /etc/systemd/system/openvpn-generate-keys.service
 rm -f /etc/systemd/system/dnsmap.service
-#rm -f /etc/apt/sources.list.d/amnezia*
-#rm -f /usr/share/keyrings/amnezia.gpg
 rm -f /usr/share/keyrings/cznic-labs-pkg.gpg
 rm -f /root/upgrade.sh
 rm -f /root/generate.sh
@@ -247,12 +239,11 @@ apt-get purge -y python3-dnslib &>/dev/null
 apt-get purge -y gnupg2 &>/dev/null
 apt-get purge -y ferm &>/dev/null
 apt-get purge -y libpam0g-dev &>/dev/null
-#apt-get purge -y amneziawg &>/dev/null
 apt-get purge -y sshguard &>/dev/null
 
 #
 # Остановим и выключим обновляемые службы
-for service in kresd@ openvpn-server@ wg-quick@; do
+for service in kresd@ openvpn-server@; do
 	systemctl list-units --type=service --no-pager | awk -v s="$service" '$1 ~ s"[^.]+\\.service" {print $1}' | xargs -r systemctl stop &>/dev/null
 	systemctl list-unit-files --type=service --no-pager | awk -v s="$service" '$1 ~ s"[^.]+\\.service" {print $1}' | xargs -r systemctl disable &>/dev/null
 done
@@ -280,10 +271,9 @@ rm -rf /etc/knot-resolver/*
 rm -rf /var/lib/knot-resolver/*
 
 #
-# Удаляем старые файлы OpenVPN и WireGuard
+# Удаляем старые файлы OpenVPN
 rm -rf /etc/openvpn/server/*
 rm -rf /etc/openvpn/client/*
-rm -rf /etc/wireguard/templates/*
 
 #
 # Удаляем скомпилированный патченный OpenVPN
@@ -335,7 +325,7 @@ fi
 #
 # Ставим необходимые пакеты
 apt-get update
-apt-get install --reinstall -y git openvpn iptables easy-rsa gawk knot-resolver idn sipcalc python3-pip wireguard diffutils socat lua-cqueues ipset
+apt-get install --reinstall -y git openvpn iptables easy-rsa gawk knot-resolver idn sipcalc python3-pip diffutils socat lua-cqueues ipset
 apt-get autoremove -y
 apt-get clean
 
@@ -348,7 +338,7 @@ PIP_BREAK_SYSTEM_PACKAGES=1 python3 -m pip install --force-reinstall --user /tmp
 #
 # Клонируем репозиторий antizapret
 rm -rf /tmp/antizapret
-git clone https://github.com/GubernievS/AntiZapret-VPN.git /tmp/antizapret
+git clone https://github.com/nikitenich/AntiZapret-VPN.git /tmp/antizapret
 
 #
 # Сохраняем пользовательские настройки и пользовательские обработчики custom*.sh
@@ -356,14 +346,12 @@ cp /root/antizapret/config/* /tmp/antizapret/setup/root/antizapret/config/ &>/de
 cp /root/antizapret/custom*.sh /tmp/antizapret/setup/root/antizapret/ &>/dev/null || true
 
 #
-# Восстанавливаем из бэкапа пользовательские настройки и пользователей OpenVPN и WireGuard
+# Восстанавливаем из бэкапа пользовательские настройки и пользователей OpenVPN
 tar -xzf /root/backup*.tar.gz &>/dev/null || true
 rm -f /root/backup*.tar.gz &>/dev/null || true
 cp -r /root/easyrsa3/* /tmp/antizapret/setup/etc/openvpn/easyrsa3 &>/dev/null || true
-cp /root/wireguard/* /tmp/antizapret/setup/etc/wireguard &>/dev/null || true
 cp /root/config/* /tmp/antizapret/setup/root/antizapret/config &>/dev/null || true
 rm -rf /root/easyrsa3
-rm -rf /root/wireguard
 rm -rf /root/config
 
 #
@@ -382,7 +370,6 @@ OPENVPN_LOG=${OPENVPN_LOG}
 SSH_PROTECTION=${SSH_PROTECTION}
 ATTACK_PROTECTION=${ATTACK_PROTECTION}
 OPENVPN_HOST=${OPENVPN_HOST}
-WIREGUARD_HOST=${WIREGUARD_HOST}
 ROUTE_ALL=${ROUTE_ALL}
 DISCORD_INCLUDE=${DISCORD_INCLUDE}
 CLOUDFLARE_INCLUDE=${CLOUDFLARE_INCLUDE}
@@ -413,10 +400,6 @@ if [[ "$ALTERNATIVE_IP" == "y" ]]; then
 	sed -i 's/10\.30\./172\.30\./g' /root/antizapret/proxy.py
 	sed -i 's/10\.29\./172\.29\./g' /etc/knot-resolver/kresd.conf
 	sed -i 's/10\./172\./g' /etc/openvpn/server/*.conf
-	sed -i 's/10\./172\./g' /etc/wireguard/templates/*.conf
-	find /etc/wireguard -name '*.conf' -exec sed -i 's/s = 10\./s = 172\./g' {} +
-else
-	find /etc/wireguard -name '*.conf' -exec sed -i 's/s = 172\./s = 10\./g' {} +
 fi
 
 #
@@ -424,23 +407,18 @@ fi
 if [[ "$VPN_DNS" == "2" ]]; then
 	# Quad9
 	sed -i '/push "dhcp-option DNS 1\.1\.1\.1"/,+1c push "dhcp-option DNS 9.9.9.10"\npush "dhcp-option DNS 149.112.112.10"' /etc/openvpn/server/vpn*.conf
-	sed -i 's/1\.1\.1\.1, 1\.0\.0\.1/9.9.9.10, 149.112.112.10/' /etc/wireguard/templates/vpn-client*.conf
 elif [[ "$VPN_DNS" == "3" ]]; then
 	# Google
 	sed -i '/push "dhcp-option DNS 1\.1\.1\.1"/,+1c push "dhcp-option DNS 8.8.8.8"\npush "dhcp-option DNS 8.8.4.4"' /etc/openvpn/server/vpn*.conf
-	sed -i 's/1\.1\.1\.1, 1\.0\.0\.1/8.8.8.8, 8.8.4.4/' /etc/wireguard/templates/vpn-client*.conf
 elif [[ "$VPN_DNS" == "4" ]]; then
 	# AdGuard
 	sed -i '/push "dhcp-option DNS 1\.1\.1\.1"/,+1c push "dhcp-option DNS 94.140.14.14"\npush "dhcp-option DNS 94.140.15.15"' /etc/openvpn/server/vpn*.conf
-	sed -i 's/1\.1\.1\.1, 1\.0\.0\.1/94.140.14.14, 94.140.15.15/' /etc/wireguard/templates/vpn-client*.conf
 elif [[ "$VPN_DNS" == "5" ]]; then
 	# Comss
 	sed -i '/push "dhcp-option DNS 1\.1\.1\.1"/,+1c push "dhcp-option DNS 83.220.169.155"\npush "dhcp-option DNS 212.109.195.93"' /etc/openvpn/server/vpn*.conf
-	sed -i 's/1\.1\.1\.1, 1\.0\.0\.1/83.220.169.155, 212.109.195.93/' /etc/wireguard/templates/vpn-client*.conf
 elif [[ "$VPN_DNS" == "6" ]]; then
 	# Xbox
 	sed -i '/push "dhcp-option DNS 1\.1\.1\.1"/,+1c push "dhcp-option DNS 176.99.11.77"\npush "dhcp-option DNS 80.78.247.254"' /etc/openvpn/server/vpn*.conf
-	sed -i 's/1\.1\.1\.1, 1\.0\.0\.1/176.99.11.77, 80.78.247.254/' /etc/wireguard/templates/vpn-client*.conf
 fi
 
 #
@@ -475,9 +453,9 @@ fi
 /root/antizapret/doall.sh ip
 
 #
-# Настраиваем сервера OpenVPN и WireGuard/AmneziaWG для первого запуска
+# Настраиваем сервера OpenVPN для первого запуска
 # Пересоздаем для всех существующих пользователей файлы подключений
-# Если пользователей нет, то создаем новых пользователей 'antizapret-client' для OpenVPN и WireGuard/AmneziaWG
+# Если пользователей нет, то создаем новых пользователей 'antizapret-client' для OpenVPN
 /root/antizapret/client.sh 7
 
 #
@@ -491,8 +469,6 @@ systemctl enable openvpn-server@antizapret-udp
 systemctl enable openvpn-server@antizapret-tcp
 systemctl enable openvpn-server@vpn-udp
 systemctl enable openvpn-server@vpn-tcp
-systemctl enable wg-quick@antizapret
-systemctl enable wg-quick@vpn
 
 ERRORS=""
 
